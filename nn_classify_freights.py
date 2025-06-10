@@ -204,9 +204,6 @@ CCs['CC'] = CCs['CC'].str.strip()
 #Mantendo apenas o CC de vendas
 CCs = CCs[CCs['CC'].str[0] == "6"]
 
-# Tratando a coluna 'Centro de Custo'
-CCs['Centro de Custo'] = np.where(CCs['Sales Person CCs'].str.strip()=="BIBIANA AGUIAR BRAGA", "0000." + CCs['CC'] + ".381","0000." + CCs['CC'] + ".101")
-
 #Tratando coluna 'Sales Person CCs'
 CCs['Sales Person CCs'] = CCs['Sales Person CCs'].astype(str)
 
@@ -538,7 +535,7 @@ num_categorias = {"num_categorias_x":[num_categorias_x],"num_categorias_y_cc":[n
 
 num_categorias = pd.DataFrame(num_categorias)
 
-num_categorias_path = r"C:\Users\RNA 2 VM (crítico)\num_categoriasVM.xlsx"
+num_categorias_path = r"C:\Users\num_categoriasVM.xlsx"
 
 num_categorias.to_excel(num_categorias_path,index=False)
 
@@ -691,7 +688,7 @@ for epoch in range(num_epochs):
 
 #Salvando o modelo treinado
 torch.save(net.state_dict(), 'modelo_treinado_RNA2VM.pth')
-upload_to_blob(r"c:\Users\powerbi\OneDrive - Dorf Ketal Chemicals India Pvt Ltd\ML Ctes\RNA 2 VM (crítico)\modelo_treinado_RNA2VM.pth", "modelo_treinado_RNA2VM.pth")
+upload_to_blob(r"c:\Users\modelo_treinado_RNA2VM.pth", "modelo_treinado_RNA2VM.pth")
 
 
 # Converta listas ou arrays em DataFrames pandas
