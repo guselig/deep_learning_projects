@@ -123,7 +123,7 @@ def upload_to_blob(local_file_path,blob_name):
         print(f"Erro ao fazer upload: {str(e)}")
 
 # Subindo o arquivo de contas
-upload_to_blob(r"c:\Users\powerbi\OneDrive - Dorf Ketal Chemicals India Pvt Ltd\ML Ctes\RNA 2 VM (crítico)\classificado_contas_contabeis.xlsx","classificado_contas_contabeis.xlsx")
+upload_to_blob(r"c:\Users\classificado_contas_contabeis.xlsx","classificado_contas_contabeis.xlsx")
 
 
 # Tratando a tabela de Supplier 
@@ -152,8 +152,6 @@ Customer['Sales Person'] =Customer['Sales Person'].str.upper()
 Customer['Sales Person'] = Customer['Sales Person'].str.strip()
 
 Customer['Sales Person'] = Customer['Sales Person'].apply(lambda x: unidecode(x) if isinstance(x, str) else x)
-
-Customer.replace({"GUSTAVO ARTHUR":"GUSTAVO ARTUR"},inplace=True)
 
 Customer_uniques = pd.DataFrame(Customer['Sales Person'].unique())
 
@@ -192,7 +190,7 @@ def get_best_match(row):
     return best_match[0]  
 
 #Extraindo o arquivo e tratando       
-CCs = pd.read_excel(r"C:\Users\powerbi\Dorf Ketal Chemicals India Pvt Ltd\Base de dados CTEs - Documentos\Alocação Pessoas CC.xlsx")
+CCs = pd.read_excel(r"C:\Users\powerbi\Alocação Pessoas CC.xlsx")
 
 CCs = CCs.iloc[:, [2, 3]]
 
@@ -256,24 +254,12 @@ Customer['Centro de Custo Vendedores'] = np.where(Customer['Centro de Custo Vend
 # Droping unnecssary columns
 Customer = Customer.drop(columns=['Sales Person CCs_x','Best Match Customer_x','Sales Person CCs_y','Centro de Custo','Best Match Customer_y'])
 
-Customer['Centro de Custo'] = np.where(
-    Customer['Description'] != "TRANSFERENCIA DE MERCADORIAS PARA FILIAL",
-    Customer['Centro de Custo Vendedores'],
-    "-"
-)
-
 Customer.drop(columns=['Centro de Custo Vendedores'],inplace=True)
 
 Customer['Centro de Custo'] = np.where(pd.isnull(Customer['Centro de Custo']),"-",Customer['Centro de Custo'])
 
 
 #Gerando a coluna Item da tabela Customer
-
-Customer.loc[Customer['Description'] == "TRANSFERENCIA DE MERCADORIAS PARA FILIAL", 'Item'] = "550399-000000"
-
-Customer.loc[Customer['Description'] == "REMESSA PARA PRESTACAO DE SERVICO", 'Item'] = "550396-000000"
-
-Customer.loc[Customer['Description'] == "REMESSA PARA DEPOSITO FECHADO OU ARMAZEM", 'Item'] = "550401-000000" # NEW
 
 Customer['Item'].replace(to_replace={'nan':"550015-000000"},inplace=True)
 
@@ -310,11 +296,7 @@ Customer = Customer[Customer['CNPJ Destinatário'] != "Formato inválido"]
 
 #Gerando a coluna CNPJ Remetente para Customer
 
-Customer['CNPJ Remetente'] = np.where(Customer['Organization Name'].str.contains("NSR"),"05.324.072/0001-08",np.where(Customer['Organization Name'].str.contains("ITAJAI"),"05.324.072/0003-70","05.324.072/0006-12"))
-
 Customer['Destinatário'] = Customer['Party Name']
-
-Customer['Remetente'] = "DORF KETAL BRASIL LTDA"
 
 Customer['CNPJ Destinatário'] = Customer['CNPJ Destinatário'].str[:18]
 
@@ -336,10 +318,6 @@ retorno_embalagens = retorno_embalagens[retorno_embalagens['Destinatário'].str.
 # Filtrando apenas as linhas que possuem centro de custo
 retorno_embalagens = retorno_embalagens[retorno_embalagens['Centro de Custo'] != "-"]
 
-# Excluindo as linhas com a Dorf como destinatário pois as notas de transferencia entre dorfs ja sao integradas ao Oracle
-retorno_embalagens = retorno_embalagens[~retorno_embalagens['Destinatário'].str.contains("DORF KETAL")]
-retorno_embalagens = retorno_embalagens[~retorno_embalagens['Destinatário'].str.contains("DRK LOGISTICA")]
-
 # Invertendo a coluna de destinatário para remetente
 retorno_embalagens['Remetente2'] = retorno_embalagens['Destinatário']
 retorno_embalagens['CNPJ Remetente2'] = retorno_embalagens['CNPJ Destinatário']
@@ -357,9 +335,6 @@ retorno_embalagens = retorno_embalagens.rename(columns={'Remetente2':'Remetente'
                                                         'Destinatário2': 'Destinatário',
                                                         'CNPJ Destinatário2': 'CNPJ Destinatário'})
 
-# Ajustando a coluna 'Invoice Type'
-retorno_embalagens['Invoice Type'] = "FRETE RETORNO DE EMBALAGENS"
-
 # Ajustando a coluna 'Item'
 retorno_embalagens['Item'] = "550398-000000"
 
@@ -374,19 +349,6 @@ Supplier.loc[Supplier['Centro de Custo'] == "0000.0.0",'Centro de Custo'] = '-'
 
 Supplier['Centro de Custo'] = np.where(Supplier['Centro de Custo'].str[4:7] == ".0.","0000"+"."+"0000"+"."+Supplier['Cost Center'],Supplier['Centro de Custo'])
 
-
-#Gerando a coluna Item da tabela Supplier
-
-Supplier.loc[(Supplier['Invoice Type']== "COMPRA PARA INDUSTRIALIZACAO") | (Supplier['Invoice Type']== "INDUSTRIALIZAÇÃO"), 'Item']= "550401-000000"
-
-Supplier.loc[(Supplier['Invoice Type']== "IMPORTACAO - COMPRA PARA INDUSTRIALIZACAO")| (Supplier['Invoice Type']== "IMPORTACAO POR REGIME ESPECIAL DE DRAWBACK"), 'Item']= "550019-000000"
-
-Supplier.loc[Supplier['Invoice Type']== "COMPRA DE MERCADORIA PARA USO E CONSUMO", 'Item']= "550397-000000"
-
-Supplier.loc[Supplier['Remetente'] == "LOCON LOCACOES DE CONTENTORES E SEVICOS LTDA", 'Item'] = "550401-000000" #NEW
-
-Supplier['Item'] = np.where((Supplier['Invoice Type'] == "COMPRA DE MERCADORIA PARA USO E CONSUMO") & (Supplier['Centro de Custo']=="-"),"550472-000000", Supplier['Item'])
-
 Supplier['CNPJ Remetente'] = Supplier['CNPJ Remetente'].str.replace('[\s\u00A0]+', '', regex=True)
 
 Supplier['CNPJ Remetente'] = Supplier['CNPJ Remetente'].str[1:]
@@ -399,13 +361,6 @@ Supplier = Supplier[Supplier['CNPJ Remetente']!="Formato inválido"]
 
 
 #Gerando as colunas CNPJ Remetente e CNPJ Destinatário na tabela Supplier
-
-Supplier['Destinatário'] = "DORF KETAL BRASIL LTDA"
-
-# Agora, usamos .loc para atualizar 'CNPJ Destinatário' com base nas condições específicas
-Supplier.loc[Supplier['Organization Name'].str.contains("NSR", na=False), 'CNPJ Destinatário'] = "05.324.072/0001-08"
-Supplier.loc[Supplier['Organization Name'].str.contains("ITAJAI", na=False), 'CNPJ Destinatário'] = "05.324.072/0003-70"
-Supplier.loc[Supplier['Organization Name'].str.contains("MACAE", na=False), 'CNPJ Destinatário'] = "05.324.072/0006-12"
 
 Supplier['Invoice Number'] = Supplier['Invoice Number'].astype(str)
 
@@ -519,8 +474,6 @@ df[['CNPJ Remetente','CNPJ Destinatário','Centro de Custo','Item']] = df[['CNPJ
 
 entrada = df[['CNPJ Remetente','CNPJ Destinatário']].copy()
 
-entrada_path = r"C:\Users\powerbi\OneDrive - Dorf Ketal Chemicals India Pvt Ltd\ML Ctes\RNA 2 VM (crítico)\entradaRNA2.xlsx"
-
 entrada.to_excel(entrada_path)
 
 upload_to_blob(entrada_path,"entradaRNA2.xlsx")
@@ -550,10 +503,10 @@ mapeamento_item = pd.DataFrame({
 })
 
 #Transformando para array e salvando os mapeamentos em arquivos .xlsx
-mapeamento_cc_path = r"C:\Users\powerbi\OneDrive - Dorf Ketal Chemicals India Pvt Ltd\ML Ctes\RNA 2 VM (crítico)\mapeamento_ccVM.xlsx"
+mapeamento_cc_path = r"C:\Users\RNA 2 VM (crítico)\mapeamento_ccVM.xlsx"
 mapeamento_cc.to_excel(mapeamento_cc_path,index=False)
 upload_to_blob(mapeamento_cc_path,"mapeamento_ccVM.xlsx")
-mapeamento_item_path = r"C:\Users\powerbi\OneDrive - Dorf Ketal Chemicals India Pvt Ltd\ML Ctes\RNA 2 VM (crítico)\mapeamento_itemVM.xlsx"
+mapeamento_item_path = r"C:\Users\RNA 2 VM (crítico)\mapeamento_itemVM.xlsx"
 mapeamento_item.to_excel(mapeamento_item_path,index=False)
 upload_to_blob(mapeamento_item_path,"mapeamento_itemVM.xlsx")
 
@@ -585,7 +538,7 @@ num_categorias = {"num_categorias_x":[num_categorias_x],"num_categorias_y_cc":[n
 
 num_categorias = pd.DataFrame(num_categorias)
 
-num_categorias_path = r"C:\Users\powerbi\OneDrive - Dorf Ketal Chemicals India Pvt Ltd\ML Ctes\RNA 2 VM (crítico)\num_categoriasVM.xlsx"
+num_categorias_path = r"C:\Users\RNA 2 VM (crítico)\num_categoriasVM.xlsx"
 
 num_categorias.to_excel(num_categorias_path,index=False)
 
